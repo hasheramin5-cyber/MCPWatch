@@ -12,3 +12,4 @@ my-snapshots/
 *.swp
 .DS_Store
 Thumbs.db
+*.zip
