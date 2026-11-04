@@ -39,7 +39,7 @@ cargo install --path .
 
 ## How it works
 
-![How MCPWatch works](docs/how-it-works.svg)
+![How MCPWatch works](docs/how-it-works.png)
 
 ## Usage
 
