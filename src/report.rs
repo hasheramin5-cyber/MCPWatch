@@ -171,10 +171,7 @@ pub fn render_scan(
     for finding in findings {
         out.push_str(&format!(
             "{} {}\n",
-            style.severity(
-                finding.severity,
-                &format!("[{}]", finding.severity.label())
-            ),
+            style.severity(finding.severity, &format!("[{}]", finding.severity.label())),
             style.bold(&finding.title)
         ));
         push_field(&mut out, style, "Server", &finding.server);

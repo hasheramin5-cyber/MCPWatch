@@ -102,7 +102,10 @@ fn version_and_help() {
 fn usage_errors_exit_with_two() {
     assert_eq!(code(&mcpwatch(&["frobnicate"])), 2);
     assert_eq!(code(&mcpwatch(&["scan"])), 2);
-    assert_eq!(code(&mcpwatch(&["scan", "x.json", "--fail-on", "bogus"])), 2);
+    assert_eq!(
+        code(&mcpwatch(&["scan", "x.json", "--fail-on", "bogus"])),
+        2
+    );
 }
 
 #[test]
@@ -132,13 +135,25 @@ fn risky_configuration_fails_and_never_prints_secrets() {
 #[test]
 fn fail_on_threshold_controls_exit_code() {
     let tmp = TempDir::new();
-    let medium_only = tmp.write("m.json", r#"{"mcpServers":{"r":{"url":"http://example.com/mcp"}}}"#);
+    let medium_only = tmp.write(
+        "m.json",
+        r#"{"mcpServers":{"r":{"url":"http://example.com/mcp"}}}"#,
+    );
     assert_eq!(code(&mcpwatch(&["scan", s(&medium_only)])), 0);
-    assert_eq!(code(&mcpwatch(&["scan", s(&medium_only), "--fail-on", "medium"])), 1);
-    assert_eq!(code(&mcpwatch(&["scan", s(&medium_only), "--fail-on", "info"])), 1);
+    assert_eq!(
+        code(&mcpwatch(&["scan", s(&medium_only), "--fail-on", "medium"])),
+        1
+    );
+    assert_eq!(
+        code(&mcpwatch(&["scan", s(&medium_only), "--fail-on", "info"])),
+        1
+    );
 
     let risky_cfg = tmp.write("r.json", &risky());
-    assert_eq!(code(&mcpwatch(&["scan", s(&risky_cfg), "--fail-on", "never"])), 0);
+    assert_eq!(
+        code(&mcpwatch(&["scan", s(&risky_cfg), "--fail-on", "never"])),
+        0
+    );
 }
 
 #[test]
@@ -256,7 +271,15 @@ fn diff_reports_no_changes_for_an_unchanged_configuration() {
     let tmp = TempDir::new();
     let cfg = tmp.write("mcp.json", &risky());
     let snaps = tmp.path().join("snaps");
-    assert_eq!(code(&mcpwatch(&["snapshot", s(&cfg), "--snapshot-dir", s(&snaps)])), 0);
+    assert_eq!(
+        code(&mcpwatch(&[
+            "snapshot",
+            s(&cfg),
+            "--snapshot-dir",
+            s(&snaps)
+        ])),
+        0
+    );
     let out = mcpwatch(&["diff", s(&cfg), "--snapshot-dir", s(&snaps)]);
     assert_eq!(code(&out), 0, "stdout: {}", stdout(&out));
     assert!(stdout(&out).contains("No changes"));
@@ -273,7 +296,15 @@ fn diff_detects_added_removed_and_modified_servers() {
             "gone":{"command":"node","args":["gone.js"]},
             "edit":{"command":"node","args":["edit.js"]}}}"#,
     );
-    assert_eq!(code(&mcpwatch(&["snapshot", s(&cfg), "--snapshot-dir", s(&snaps)])), 0);
+    assert_eq!(
+        code(&mcpwatch(&[
+            "snapshot",
+            s(&cfg),
+            "--snapshot-dir",
+            s(&snaps)
+        ])),
+        0
+    );
 
     fs::write(
         &cfg,
@@ -305,10 +336,30 @@ fn diff_uses_the_most_recent_snapshot() {
     let tmp = TempDir::new();
     let snaps = tmp.path().join("snaps");
     let cfg = tmp.write("mcp.json", r#"{"mcpServers":{"a":{"command":"node"}}}"#);
-    assert_eq!(code(&mcpwatch(&["snapshot", s(&cfg), "--snapshot-dir", s(&snaps)])), 0);
+    assert_eq!(
+        code(&mcpwatch(&[
+            "snapshot",
+            s(&cfg),
+            "--snapshot-dir",
+            s(&snaps)
+        ])),
+        0
+    );
 
-    fs::write(&cfg, r#"{"mcpServers":{"a":{"command":"node"},"b":{"command":"node"}}}"#).unwrap();
-    assert_eq!(code(&mcpwatch(&["snapshot", s(&cfg), "--snapshot-dir", s(&snaps)])), 0);
+    fs::write(
+        &cfg,
+        r#"{"mcpServers":{"a":{"command":"node"},"b":{"command":"node"}}}"#,
+    )
+    .unwrap();
+    assert_eq!(
+        code(&mcpwatch(&[
+            "snapshot",
+            s(&cfg),
+            "--snapshot-dir",
+            s(&snaps)
+        ])),
+        0
+    );
 
     let out = mcpwatch(&["diff", s(&cfg), "--snapshot-dir", s(&snaps)]);
     assert_eq!(code(&out), 0, "stdout: {}", stdout(&out));

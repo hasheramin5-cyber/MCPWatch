@@ -78,14 +78,22 @@ pub struct McpConfig {
 
 #[derive(Debug)]
 pub enum ConfigError {
-    Io { path: String, source: std::io::Error },
+    Io {
+        path: String,
+        source: std::io::Error,
+    },
     NotAFile(String),
     NotUtf8(String),
-    TooLarge { path: String, limit: u64 },
+    TooLarge {
+        path: String,
+        limit: u64,
+    },
     Empty,
     Json(serde_json::Error),
     NotAnObject,
-    BadContainer { key: String },
+    BadContainer {
+        key: String,
+    },
     NoServers,
 }
 
@@ -200,9 +208,10 @@ fn parse_server(container: &str, name: &str, def: &Value) -> ServerConfig {
     };
 
     let Some(obj) = def.as_object() else {
-        server
-            .issues
-            .push(ConfigIssue::new(&path, "server definition must be a JSON object"));
+        server.issues.push(ConfigIssue::new(
+            &path,
+            "server definition must be a JSON object",
+        ));
         return server;
     };
 
@@ -216,9 +225,10 @@ fn parse_server(container: &str, name: &str, def: &Value) -> ServerConfig {
             server.env_path = format!("{path}.command.env");
             match nested.get("path") {
                 Some(Value::String(p)) => server.command = Some(p.clone()),
-                _ => server
-                    .issues
-                    .push(ConfigIssue::new(&server.command_path, "`path` must be a string")),
+                _ => server.issues.push(ConfigIssue::new(
+                    &server.command_path,
+                    "`path` must be a string",
+                )),
             }
             if let Some(a) = nested.get("args") {
                 server.args = parse_string_list(a, &server.args_path, &mut server.issues);
@@ -315,11 +325,19 @@ fn parse_string_map(
     issues: &mut Vec<ConfigIssue>,
 ) -> BTreeMap<String, String> {
     let Some(map) = value.as_object() else {
-        issues.push(ConfigIssue::new(field, "must be an object of string values"));
+        issues.push(ConfigIssue::new(
+            field,
+            "must be an object of string values",
+        ));
         return BTreeMap::new();
     };
     map.iter()
-        .map(|(k, v)| (k.clone(), scalar_to_string(v, &format!("{field}.{k}"), issues)))
+        .map(|(k, v)| {
+            (
+                k.clone(),
+                scalar_to_string(v, &format!("{field}.{k}"), issues),
+            )
+        })
         .collect()
 }
 
@@ -379,7 +397,8 @@ mod tests {
 
     #[test]
     fn parses_vscode_layouts() {
-        let a = parse(r#"{"servers":{"x":{"type":"http","url":"https://example.com/mcp"}}}"#).unwrap();
+        let a =
+            parse(r#"{"servers":{"x":{"type":"http","url":"https://example.com/mcp"}}}"#).unwrap();
         assert_eq!(a.servers[0].url.as_deref(), Some("https://example.com/mcp"));
         assert_eq!(a.servers[0].transport.as_deref(), Some("http"));
         assert_eq!(a.servers[0].url_path.as_deref(), Some("servers.x.url"));
@@ -408,7 +427,10 @@ mod tests {
         assert!(matches!(parse("   \n"), Err(ConfigError::Empty)));
         assert!(matches!(parse("{ nope"), Err(ConfigError::Json(_))));
         assert!(matches!(parse("[]"), Err(ConfigError::NotAnObject)));
-        assert!(matches!(parse(r#"{"other":1}"#), Err(ConfigError::NoServers)));
+        assert!(matches!(
+            parse(r#"{"other":1}"#),
+            Err(ConfigError::NoServers)
+        ));
         assert!(matches!(
             parse(r#"{"mcpServers":[]}"#),
             Err(ConfigError::BadContainer { .. })

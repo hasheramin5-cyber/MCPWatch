@@ -423,7 +423,8 @@ pub fn default_dir() -> Result<PathBuf, SnapshotError> {
     } else if cfg!(target_os = "macos") {
         env_path("HOME").map(|p| p.join("Library").join("Application Support"))
     } else {
-        env_path("XDG_DATA_HOME").or_else(|| env_path("HOME").map(|p| p.join(".local").join("share")))
+        env_path("XDG_DATA_HOME")
+            .or_else(|| env_path("HOME").map(|p| p.join(".local").join("share")))
     };
     base.map(|b| b.join("mcpwatch").join("snapshots"))
         .ok_or(SnapshotError::NoDataDir)
@@ -432,7 +433,10 @@ pub fn default_dir() -> Result<PathBuf, SnapshotError> {
 #[cfg(unix)]
 fn create_private_dir(path: &Path) -> io::Result<()> {
     use std::os::unix::fs::DirBuilderExt;
-    fs::DirBuilder::new().recursive(true).mode(0o700).create(path)
+    fs::DirBuilder::new()
+        .recursive(true)
+        .mode(0o700)
+        .create(path)
 }
 
 #[cfg(not(unix))]
@@ -565,9 +569,8 @@ pub fn load_latest(dir: &Path, config_path: &Path) -> Result<LoadedSnapshot, Sna
     }
     let (_, file) = best.ok_or_else(not_found)?;
 
-    let text = fs::read_to_string(&file).map_err(|e| {
-        SnapshotError::io(format!("cannot read snapshot '{}'", file.display()), e)
-    })?;
+    let text = fs::read_to_string(&file)
+        .map_err(|e| SnapshotError::io(format!("cannot read snapshot '{}'", file.display()), e))?;
     let snapshot: Snapshot = serde_json::from_str(&text).map_err(|e| SnapshotError::Corrupt {
         file: file.display().to_string(),
         reason: e.to_string(),
@@ -675,8 +678,20 @@ fn compare(before: &ServerSnapshot, after: &ServerSnapshot) -> Vec<String> {
         details.push(format!("url: {} -> {}", opt(&before.url), opt(&after.url)));
     }
     compare_maps("env", &before.env, &after.env, false, &mut details);
-    compare_maps("header", &before.headers, &after.headers, false, &mut details);
-    compare_maps("setting", &before.settings, &after.settings, true, &mut details);
+    compare_maps(
+        "header",
+        &before.headers,
+        &after.headers,
+        false,
+        &mut details,
+    );
+    compare_maps(
+        "setting",
+        &before.settings,
+        &after.settings,
+        true,
+        &mut details,
+    );
     if details.is_empty() && before.fingerprint != after.fingerprint {
         details.push(
             "values that are not stored in the snapshot changed (for example a redacted argument)"
@@ -807,18 +822,14 @@ mod tests {
 
     #[test]
     fn detects_added_removed_and_modified_servers() {
-        let old = cfg(
-            r#"{"mcpServers":{
+        let old = cfg(r#"{"mcpServers":{
                 "a":{"command":"node","args":["a.js"]},
                 "b":{"command":"node","args":["b.js"]},
-                "c":{"command":"node","args":["c.js"],"env":{"K":"1"},"autoApprove":["x"]}}}"#,
-        );
-        let new = cfg(
-            r#"{"mcpServers":{
+                "c":{"command":"node","args":["c.js"],"env":{"K":"1"},"autoApprove":["x"]}}}"#);
+        let new = cfg(r#"{"mcpServers":{
                 "a":{"command":"deno","args":["a2.js"]},
                 "c":{"command":"node","args":["c.js"],"env":{"K":"2","NEW":"x"},"autoApprove":["x","y"]},
-                "d":{"command":"node","args":["d.js"]}}}"#,
-        );
+                "d":{"command":"node","args":["d.js"]}}}"#);
         let snap = Snapshot::build(&old, "t".into(), "salt".into(), 0);
         let changes = diff(&snap, &new);
 
@@ -838,8 +849,12 @@ mod tests {
         assert!(a.iter().any(|d| d.starts_with("args:")));
         let c = &changes[2].details;
         assert!(c.iter().any(|d| d == "env added: NEW"));
-        assert!(c.iter().any(|d| d == "env value changed: K (value not shown)"));
-        assert!(c.iter().any(|d| d.starts_with("setting `autoApprove` changed")));
+        assert!(c
+            .iter()
+            .any(|d| d == "env value changed: K (value not shown)"));
+        assert!(c
+            .iter()
+            .any(|d| d.starts_with("setting `autoApprove` changed")));
     }
 
     #[test]
@@ -851,8 +866,10 @@ mod tests {
 
     #[test]
     fn changes_to_redacted_values_are_still_detected() {
-        let old = cfg(r#"{"mcpServers":{"a":{"command":"node","args":["--token","tok-aaaaaaaa"]}}}"#);
-        let new = cfg(r#"{"mcpServers":{"a":{"command":"node","args":["--token","tok-bbbbbbbb"]}}}"#);
+        let old =
+            cfg(r#"{"mcpServers":{"a":{"command":"node","args":["--token","tok-aaaaaaaa"]}}}"#);
+        let new =
+            cfg(r#"{"mcpServers":{"a":{"command":"node","args":["--token","tok-bbbbbbbb"]}}}"#);
         let snap = Snapshot::build(&old, "t".into(), "salt".into(), 0);
         let changes = diff(&snap, &new);
         assert_eq!(changes.len(), 1);
@@ -906,7 +923,11 @@ mod tests {
         ));
 
         let (stem, id) = file_key(&config_path);
-        fs::write(dir.join(format!("{stem}-{id}.0000000000001.json")), "not json").unwrap();
+        fs::write(
+            dir.join(format!("{stem}-{id}.0000000000001.json")),
+            "not json",
+        )
+        .unwrap();
         assert!(matches!(
             load_latest(&dir, &config_path),
             Err(SnapshotError::Corrupt { .. })
