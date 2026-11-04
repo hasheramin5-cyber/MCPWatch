@@ -170,4 +170,4 @@ Issues and pull requests are welcome. Please keep changes small and focused, add
 
 ## License
 
-MIT. See [LICENSE](LICENSE).
+See [LICENSE](LICENSE).
