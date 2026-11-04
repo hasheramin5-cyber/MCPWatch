@@ -1,5 +1,9 @@
 # MCPWatch
 
+[![CI](https://github.com/hasheramin5-cyber/MCPWatch/actions/workflows/ci.yml/badge.svg)](https://github.com/hasheramin5-cyber/MCPWatch/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+![Rust 1.74+](https://img.shields.io/badge/rust-1.74%2B-orange.svg)
+
 **Know what your AI agents can access.**
 
 MCPWatch is a small command-line tool that statically audits local [Model Context Protocol](https://modelcontextprotocol.io) (MCP) configuration files and flags risky settings *before* you connect them to an AI coding agent. It also keeps local snapshots so you can see exactly what changed in a configuration over time.
