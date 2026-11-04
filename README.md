@@ -33,6 +33,10 @@ cargo build --release
 cargo install --path .
 ```
 
+## How it works
+
+![How MCPWatch works](docs/how-it-works.svg)
+
 ## Usage
 
 ```sh
@@ -83,6 +87,8 @@ To reduce accidental exposure:
 Fingerprints of low-entropy values (short passwords, for example) can be guessed by brute force by someone who has the file, because the salt is stored alongside them. Treat snapshot files as sensitive and keep them out of version control.
 
 ## Example report
+
+![MCPWatch scan output](docs/scan.png)
 
 Output from `mcpwatch scan examples/mcp.example.json`, abridged to two of the seven findings:
 
