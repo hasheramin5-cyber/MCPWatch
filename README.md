@@ -24,7 +24,7 @@ An MCP configuration decides which programs your AI agent launches, which folder
 Requires a stable Rust toolchain (1.74 or newer).
 
 ```sh
-git clone <your-fork-or-clone-url> MCPWatch
+git clone https://github.com/hasheramin5-cyber/MCPWatch.git
 cd MCPWatch
 cargo build --release
 # binary: target/release/mcpwatch (mcpwatch.exe on Windows)
