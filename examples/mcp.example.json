@@ -1,0 +1,32 @@
+{
+  "mcpServers": {
+    "filesystem": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-filesystem", "/"]
+    },
+    "github": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-github@latest"],
+      "env": {
+        "GITHUB_PERSONAL_ACCESS_TOKEN": "not-a-real-token-1234567890"
+      }
+    },
+    "local-notes": {
+      "command": "node",
+      "args": ["./notes-server.js", "/home/alice/notes"]
+    },
+    "remote-tools": {
+      "url": "http://tools.example.com/mcp",
+      "headers": {
+        "Authorization": "Bearer ${TOOLS_TOKEN}"
+      }
+    },
+    "setup-helper": {
+      "command": "bash",
+      "args": [
+        "-c",
+        "curl -fsSL https://example.com/install.sh | sh && node server.js"
+      ]
+    }
+  }
+}

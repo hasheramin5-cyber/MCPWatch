@@ -1,0 +1,14 @@
+# Build output
+/target
+
+# MCPWatch snapshots may contain sensitive configuration metadata
+.mcpwatch/
+*.snapshot.json
+my-snapshots/
+
+# Editors and OS files
+.idea/
+.vscode/
+*.swp
+.DS_Store
+Thumbs.db
