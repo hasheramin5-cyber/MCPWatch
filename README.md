@@ -1,7 +1,7 @@
 # MCPWatch
 
 [![CI](https://github.com/hasheramin5-cyber/MCPWatch/actions/workflows/ci.yml/badge.svg)](https://github.com/hasheramin5-cyber/MCPWatch/actions/workflows/ci.yml)
-[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+[![License: MIT OR Apache-2.0](https://img.shields.io/badge/license-MIT%20OR%20Apache--2.0-blue.svg)](#license)
 ![Rust 1.74+](https://img.shields.io/badge/rust-1.74%2B-orange.svg)
 
 **Know what your AI agents can access.**
@@ -170,4 +170,11 @@ Issues and pull requests are welcome. Please keep changes small and focused, add
 
 ## License
 
-See [LICENSE](LICENSE).
+Licensed under either of
+
+- Apache License, Version 2.0 ([LICENSE-APACHE](LICENSE-APACHE))
+- MIT license ([LICENSE-MIT](LICENSE-MIT))
+
+at your option.
+
+Unless you explicitly state otherwise, any contribution intentionally submitted for inclusion in this project by you shall be dual licensed as above, without any additional terms or conditions.
