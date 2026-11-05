@@ -1,8 +1,11 @@
 # MCPWatch
 
 [![CI](https://github.com/hasheramin5-cyber/MCPWatch/actions/workflows/ci.yml/badge.svg)](https://github.com/hasheramin5-cyber/MCPWatch/actions/workflows/ci.yml)
+[![Release](https://img.shields.io/github/v/release/hasheramin5-cyber/MCPWatch)](https://github.com/hasheramin5-cyber/MCPWatch/releases)
 [![License: MIT OR Apache-2.0](https://img.shields.io/badge/license-MIT%20OR%20Apache--2.0-blue.svg)](#license)
-![Rust 1.74+](https://img.shields.io/badge/rust-1.74%2B-orange.svg)
+![Rust stable](https://img.shields.io/badge/rust-stable-orange.svg)
+![Platforms](https://img.shields.io/badge/platforms-Linux%20%7C%20macOS%20%7C%20Windows-lightgrey.svg)
+![Dependabot](https://img.shields.io/badge/dependabot-enabled-025e8c.svg)
 
 **Know what your AI agents can access.**
 
