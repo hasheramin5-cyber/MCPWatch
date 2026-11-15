@@ -6,6 +6,7 @@
 ![Rust stable](https://img.shields.io/badge/rust-stable-orange.svg)
 ![Platforms](https://img.shields.io/badge/platforms-Linux%20%7C%20macOS%20%7C%20Windows-lightgrey.svg)
 ![Dependabot](https://img.shields.io/badge/dependabot-enabled-025e8c.svg)
+[![M8ven Score](https://m8ven.ai/badge/mcp/hasheramin5-cyber/mcpwatch)](https://m8ven.ai/mcp/hasheramin5-cyber/mcpwatch?s=readme)
 
 **Know what your AI agents can access.**
 
